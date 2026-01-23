@@ -7,8 +7,8 @@ let toys = [];
 // Star particles for joyful landings
 let stars = [];
 
-// Smiley faces positions for background decoration
-let smiles = [];
+// Flower positions for background decoration
+let flowers = [];
 
 // Object representing our player character ("blob")
 let blob2 = {
@@ -67,12 +67,14 @@ function setup() {
     });
   }
 
-  // Generate smiley faces positions (higher on the canvas)
-  for (let i = 0; i < 8; i++) {
-    smiles.push({
-      x: random(30, width - 30),
-      y: random(30, floorY - 100),
-      size: random(20, 36)
+  // Generate flower positions for the background
+  for (let i = 0; i < 12; i++) {
+    flowers.push({
+      x: random(20, width - 20),
+      y: random(floorY - 60, floorY - 20),
+      size: random(6, 12),
+      petalColor: color(random(150, 255), random(100, 255), random(150, 255)),
+      centerColor: color(255, 200, 50)
     });
   }
 }
@@ -80,9 +82,9 @@ function setup() {
 function draw() {
   background(240);
 
-  // --- Draw smiley faces in the background ---
-  for (let s of smiles) {
-    drawSmiley(s.x, s.y, s.size);
+  // --- Draw flowers in the background ---
+  for (let f of flowers) {
+    drawFlower(f.x, f.y, f.size, f.petalColor, f.centerColor);
   }
 
   // --- Draw the floor ---
@@ -99,9 +101,12 @@ function draw() {
   let move = 0;
   if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) move -= 1;
   if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) move += 1;
-
   blob2.vx += blob2.accel * move;
+
+  // --- Apply friction ---
   blob2.vx *= blob2.onGround ? blob2.frictionGround : blob2.frictionAir;
+
+  // --- Limit horizontal speed ---
   blob2.vx = constrain(blob2.vx, -blob2.maxRun, blob2.maxRun);
 
   // --- Gravity and movement ---
@@ -112,11 +117,9 @@ function draw() {
   // --- Ground collision detection ---
   if (blob2.y + blob2.r >= floorY) {
     blob2.y = floorY - blob2.r;
-
     if (!blob2.onGround && blob2.vy > 1) {
       spawnStars(blob2.x, floorY);
     }
-
     blob2.vy = 0;
     blob2.onGround = true;
   } else {
@@ -126,8 +129,9 @@ function draw() {
   // --- Mischief interaction ---
   for (let t of toys) {
     let d = dist(blob2.x, blob2.y, t.x, t.y);
-    if (d < blob2.r + t.r) t.vx += blob2.vx * 0.5;
-
+    if (d < blob2.r + t.r) {
+      t.vx += blob2.vx * 0.5;
+    }
     t.x += t.vx;
     t.vx *= 0.9;
     t.x = constrain(t.x, t.r, width - t.r);
@@ -140,8 +144,8 @@ function draw() {
   blob2.t += blob2.tSpeed;
   drawBlob(blob2);
 
-  // --- Draw a smiley face on the blob ---
-  drawBlobSmiley(blob2.x, blob2.y, blob2.r);
+  // --- Draw smiley face on blob ---
+  drawSmiley(blob2.x, blob2.y, blob2.r);
 
   // --- Update and draw star particles ---
   updateStars();
@@ -157,32 +161,32 @@ function drawBlob(b) {
   beginShape();
   for (let i = 0; i < b.points; i++) {
     const a = (i / b.points) * TAU;
-    const n = noise(cos(a) * b.wobbleFreq + 100, sin(a) * b.wobbleFreq + 100, b.t);
+    const n = noise(
+      cos(a) * b.wobbleFreq + 100,
+      sin(a) * b.wobbleFreq + 100,
+      b.t,
+    );
     const r = b.r + map(n, 0, 1, -b.wobble, b.wobble);
     vertex(b.x + cos(a) * r, b.y + sin(a) * r);
   }
   endShape(CLOSE);
 }
 
-// --- Draw a smiley face on the blob itself ---
-function drawBlobSmiley(x, y, r) {
-  fill(255, 230, 100);
-  circle(x, y, r); // Base circle slightly overlaps blob
-
-  // Eyes
+// --- Draw a smiley face on the blob ---
+function drawSmiley(x, y, r) {
   fill(0);
-  circle(x - r * 0.2, y - r * 0.15, r * 0.15);
-  circle(x + r * 0.2, y - r * 0.15, r * 0.15);
-
+  // Eyes
+  circle(x - r / 3, y - r / 4, r / 5);
+  circle(x + r / 3, y - r / 4, r / 5);
   // Smile
   noFill();
   stroke(0);
   strokeWeight(2);
-  arc(x, y + r * 0.1, r * 0.5, r * 0.4, 0, PI);
+  arc(x, y + r / 8, r / 1.5, r / 1.5, 0, PI);
   noStroke();
 }
 
-// Handle jump input (only triggers once per key press)
+// Handle jump input
 function keyPressed() {
   if ((key === " " || key === "W" || key === "w" || keyCode === UP_ARROW) && blob2.onGround) {
     blob2.vy = blob2.jumpV;
@@ -212,13 +216,17 @@ function updateStars() {
     s.y += s.vy;
     s.vy += 0.2;
     s.life--;
+
     push();
     translate(s.x, s.y);
     rotate(s.rot);
     fill(255, 220, 80, map(s.life, 0, 30, 50, 255));
     drawStar(0, 0, s.r, s.r * 2, 5);
     pop();
-    if (s.life <= 0) stars.splice(i, 1);
+
+    if (s.life <= 0) {
+      stars.splice(i, 1);
+    }
   }
 }
 
@@ -232,18 +240,19 @@ function drawStar(x, y, r1, r2, n) {
   endShape(CLOSE);
 }
 
-// --- Smiley face helper for background ---
-function drawSmiley(x, y, size) {
-  fill(255, 230, 100);
+// --- Flower drawing helper ---
+function drawFlower(x, y, size, petalColor, centerColor) {
+  fill(petalColor);
+  for (let i = 0; i < 5; i++) {
+    ellipse(
+      x + cos((i * TWO_PI) / 5) * size,
+      y + sin((i * TWO_PI) / 5) * size,
+      size,
+      size
+    );
+  }
+  fill(centerColor);
   circle(x, y, size);
-  fill(0);
-  circle(x - size * 0.2, y - size * 0.15, size * 0.15);
-  circle(x + size * 0.2, y - size * 0.15, size * 0.15);
-  noFill();
-  stroke(0);
-  strokeWeight(2);
-  arc(x, y + size * 0.1, size * 0.5, size * 0.4, 0, PI);
-  noStroke();
 }
 
 /* Quick tuning notes for students:

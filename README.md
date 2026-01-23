@@ -12,8 +12,7 @@ Cherry Ke c5ke 21090404
 
 ## Description
 
-The blob moves left/right (A/D or ←/→) and jumps (Space/W/↑).
-Demonstrates horizontal input, gravity, ground collision, and jump gating.
+The joyful blob moves left/right (A/D or ←/→) and jumps (Space/W/↑) and can interact with the balls.
 
 
 ---
