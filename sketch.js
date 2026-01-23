@@ -1,6 +1,12 @@
 // Y-position of the floor (ground level)
 let floorY;
 
+// Small objects the blob can bump (mischief)
+let toys = [];
+
+// Star particles for joyful landings
+let stars = [];
+
 // Object representing our player character ("blob")
 let blob2 = {
   // Position
@@ -47,6 +53,16 @@ function setup() {
 
   // Start the blob resting on the floor
   blob2.y = floorY - blob2.r - 1;
+
+  // Create small bumpable objects (mischief toys)
+  for (let i = 0; i < 6; i++) {
+    toys.push({
+      x: random(60, width - 60),
+      y: floorY - 10,
+      r: 8,
+      vx: 0,
+    });
+  }
 }
 
 function draw() {
@@ -55,6 +71,12 @@ function draw() {
   // --- Draw the floor ---
   fill(200);
   rect(0, floorY, width, height - floorY);
+
+  // --- Draw mischief objects ---
+  fill(255, 200, 80);
+  for (let t of toys) {
+    circle(t.x, t.y, t.r * 2);
+  }
 
   // --- Handle horizontal input ---
   // move will be:
@@ -91,6 +113,11 @@ function draw() {
     // Snap blob back to the floor
     blob2.y = floorY - blob2.r;
 
+    // If the blob just landed, create stars
+    if (!blob2.onGround && blob2.vy > 1) {
+      spawnStars(blob2.x, floorY);
+    }
+
     // Stop downward movement
     blob2.vy = 0;
 
@@ -98,6 +125,19 @@ function draw() {
     blob2.onGround = true;
   } else {
     blob2.onGround = false;
+  }
+
+  // --- Mischief interaction ---
+  // Blob bumps objects and sends them sliding
+  for (let t of toys) {
+    let d = dist(blob2.x, blob2.y, t.x, t.y);
+    if (d < blob2.r + t.r) {
+      t.vx += blob2.vx * 0.5;
+    }
+
+    t.x += t.vx;
+    t.vx *= 0.9;
+    t.x = constrain(t.x, t.r, width - t.r);
   }
 
   // --- Keep blob inside the screen horizontally ---
@@ -109,6 +149,9 @@ function draw() {
 
   // Draw the blob
   drawBlob(blob2);
+
+  // --- Update and draw star particles ---
+  updateStars();
 
   // --- UI text ---
   fill(0);
@@ -156,6 +199,54 @@ function keyPressed() {
     // Blob is now airborne
     blob2.onGround = false;
   }
+}
+
+// --- Star particle helpers ---
+
+function spawnStars(x, y) {
+  for (let i = 0; i < 10; i++) {
+    stars.push({
+      x: x,
+      y: y,
+      vx: random(-3, 3),
+      vy: random(-6, -2),
+      life: 30,
+      r: random(3, 5),
+      rot: random(TAU),
+    });
+  }
+}
+
+function updateStars() {
+  for (let i = stars.length - 1; i >= 0; i--) {
+    const s = stars[i];
+
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.2;
+    s.life--;
+
+    push();
+    translate(s.x, s.y);
+    rotate(s.rot);
+    fill(255, 220, 80, map(s.life, 0, 30, 50, 255));
+    drawStar(0, 0, s.r, s.r * 2, 5);
+    pop();
+
+    if (s.life <= 0) {
+      stars.splice(i, 1);
+    }
+  }
+}
+
+function drawStar(x, y, r1, r2, n) {
+  beginShape();
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i * PI) / n;
+    const r = i % 2 === 0 ? r2 : r1;
+    vertex(x + cos(a) * r, y + sin(a) * r);
+  }
+  endShape(CLOSE);
 }
 
 /* Quick tuning notes for students:
