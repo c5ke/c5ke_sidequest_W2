@@ -7,6 +7,9 @@ let toys = [];
 // Star particles for joyful landings
 let stars = [];
 
+// Smiley faces positions for background decoration
+let smiles = [];
+
 // Object representing our player character ("blob")
 let blob2 = {
   // Position
@@ -63,10 +66,24 @@ function setup() {
       vx: 0,
     });
   }
+
+  // Generate smiley faces positions (higher on the canvas)
+  for (let i = 0; i < 8; i++) {
+    smiles.push({
+      x: random(30, width - 30),
+      y: random(30, floorY - 100),
+      size: random(20, 36)
+    });
+  }
 }
 
 function draw() {
   background(240);
+
+  // --- Draw smiley faces in the background ---
+  for (let s of smiles) {
+    drawSmiley(s.x, s.y, s.size);
+  }
 
   // --- Draw the floor ---
   fill(200);
@@ -79,61 +96,37 @@ function draw() {
   }
 
   // --- Handle horizontal input ---
-  // move will be:
-  // -1 for left, +1 for right, 0 for no input
   let move = 0;
-
-  // A key or left arrow → move left
   if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) move -= 1;
-
-  // D key or right arrow → move right
   if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) move += 1;
 
-  // Apply acceleration based on input
   blob2.vx += blob2.accel * move;
-
-  // --- Apply friction ---
-  // Use stronger friction on the ground, weaker in the air
   blob2.vx *= blob2.onGround ? blob2.frictionGround : blob2.frictionAir;
-
-  // --- Limit horizontal speed ---
   blob2.vx = constrain(blob2.vx, -blob2.maxRun, blob2.maxRun);
 
   // --- Gravity and movement ---
-  // Gravity always increases downward velocity
   blob2.vy += blob2.gravity;
-
-  // Update position using velocity
   blob2.x += blob2.vx;
   blob2.y += blob2.vy;
 
   // --- Ground collision detection ---
-  // Check if the blob has gone below the floor
   if (blob2.y + blob2.r >= floorY) {
-    // Snap blob back to the floor
     blob2.y = floorY - blob2.r;
 
-    // If the blob just landed, create stars
     if (!blob2.onGround && blob2.vy > 1) {
       spawnStars(blob2.x, floorY);
     }
 
-    // Stop downward movement
     blob2.vy = 0;
-
-    // Blob is now grounded
     blob2.onGround = true;
   } else {
     blob2.onGround = false;
   }
 
   // --- Mischief interaction ---
-  // Blob bumps objects and sends them sliding
   for (let t of toys) {
     let d = dist(blob2.x, blob2.y, t.x, t.y);
-    if (d < blob2.r + t.r) {
-      t.vx += blob2.vx * 0.5;
-    }
+    if (d < blob2.r + t.r) t.vx += blob2.vx * 0.5;
 
     t.x += t.vx;
     t.vx *= 0.9;
@@ -144,11 +137,11 @@ function draw() {
   blob2.x = constrain(blob2.x, blob2.r, width - blob2.r);
 
   // --- Animate the blob shape ---
-  // Advance time for noise-based wobble
   blob2.t += blob2.tSpeed;
-
-  // Draw the blob
   drawBlob(blob2);
+
+  // --- Draw a smiley face on the blob ---
+  drawBlobSmiley(blob2.x, blob2.y, blob2.r);
 
   // --- Update and draw star particles ---
   updateStars();
@@ -162,47 +155,42 @@ function draw() {
 function drawBlob(b) {
   fill(20, 120, 255);
   beginShape();
-
-  // Loop around a full circle
   for (let i = 0; i < b.points; i++) {
-    // Angle around the circle
     const a = (i / b.points) * TAU;
-
-    // Sample Perlin noise using the angle and time
-    // This creates smooth, animated deformation
-    const n = noise(
-      cos(a) * b.wobbleFreq + 100,
-      sin(a) * b.wobbleFreq + 100,
-      b.t,
-    );
-
-    // Map noise value to a radius offset
+    const n = noise(cos(a) * b.wobbleFreq + 100, sin(a) * b.wobbleFreq + 100, b.t);
     const r = b.r + map(n, 0, 1, -b.wobble, b.wobble);
-
-    // Convert polar coordinates to screen space
     vertex(b.x + cos(a) * r, b.y + sin(a) * r);
   }
-
   endShape(CLOSE);
+}
+
+// --- Draw a smiley face on the blob itself ---
+function drawBlobSmiley(x, y, r) {
+  fill(255, 230, 100);
+  circle(x, y, r); // Base circle slightly overlaps blob
+
+  // Eyes
+  fill(0);
+  circle(x - r * 0.2, y - r * 0.15, r * 0.15);
+  circle(x + r * 0.2, y - r * 0.15, r * 0.15);
+
+  // Smile
+  noFill();
+  stroke(0);
+  strokeWeight(2);
+  arc(x, y + r * 0.1, r * 0.5, r * 0.4, 0, PI);
+  noStroke();
 }
 
 // Handle jump input (only triggers once per key press)
 function keyPressed() {
-  // Jump only if the blob is on the ground
-  if (
-    (key === " " || key === "W" || key === "w" || keyCode === UP_ARROW) &&
-    blob2.onGround
-  ) {
-    // Apply an instant upward velocity
+  if ((key === " " || key === "W" || key === "w" || keyCode === UP_ARROW) && blob2.onGround) {
     blob2.vy = blob2.jumpV;
-
-    // Blob is now airborne
     blob2.onGround = false;
   }
 }
 
 // --- Star particle helpers ---
-
 function spawnStars(x, y) {
   for (let i = 0; i < 10; i++) {
     stars.push({
@@ -220,22 +208,17 @@ function spawnStars(x, y) {
 function updateStars() {
   for (let i = stars.length - 1; i >= 0; i--) {
     const s = stars[i];
-
     s.x += s.vx;
     s.y += s.vy;
     s.vy += 0.2;
     s.life--;
-
     push();
     translate(s.x, s.y);
     rotate(s.rot);
     fill(255, 220, 80, map(s.life, 0, 30, 50, 255));
     drawStar(0, 0, s.r, s.r * 2, 5);
     pop();
-
-    if (s.life <= 0) {
-      stars.splice(i, 1);
-    }
+    if (s.life <= 0) stars.splice(i, 1);
   }
 }
 
@@ -247,6 +230,20 @@ function drawStar(x, y, r1, r2, n) {
     vertex(x + cos(a) * r, y + sin(a) * r);
   }
   endShape(CLOSE);
+}
+
+// --- Smiley face helper for background ---
+function drawSmiley(x, y, size) {
+  fill(255, 230, 100);
+  circle(x, y, size);
+  fill(0);
+  circle(x - size * 0.2, y - size * 0.15, size * 0.15);
+  circle(x + size * 0.2, y - size * 0.15, size * 0.15);
+  noFill();
+  stroke(0);
+  strokeWeight(2);
+  arc(x, y + size * 0.1, size * 0.5, size * 0.4, 0, PI);
+  noStroke();
 }
 
 /* Quick tuning notes for students:
