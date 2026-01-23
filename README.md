@@ -1,12 +1,12 @@
 ## Project Title
 
-GBDA302 Week 2 Example 2: Movement + Jump (Floor Collision)
+GBDA302 Week 2 Sidequest
 
 ---
 
 ## Authors
 
-Karen Cochrane and David Han
+Cherry Ke c5ke 21090404
 
 ---
 
@@ -15,15 +15,6 @@ Karen Cochrane and David Han
 The blob moves left/right (A/D or ←/→) and jumps (Space/W/↑).
 Demonstrates horizontal input, gravity, ground collision, and jump gating.
 
----
-
-## Learning Goals
-
-Learning Goals:
-
-- Read keyboard input for horizontal motion
-- Apply gravity and detect ground contact
-- Implement a jump that only triggers when grounded
 
 ---
 
@@ -35,6 +26,6 @@ N/A
 
 ## GenAI
 
-The code was written by Dr. Karen Cochrane but she used GenAI to write the comments.
+The code was written by Dr. Karen Cochrane. ChatGPT was used to generate addittional features like stars and balls to play with.
 
 ---
