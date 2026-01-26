@@ -157,7 +157,7 @@ function draw() {
 
 // Draws a soft, organic blob using Perlin noise
 function drawBlob(b) {
-  fill(20, 120, 255);
+  fill(255, 255, 0);
   beginShape();
   for (let i = 0; i < b.points; i++) {
     const a = (i / b.points) * TAU;
